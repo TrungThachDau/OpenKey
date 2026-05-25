@@ -16,6 +16,7 @@ redistribute your new version, it MUST be open source.
 
 #define WM_TRAYMESSAGE (WM_USER + 1)
 #define TRAY_ICONUID 100
+#define EMPTY_HOTKEY 0xFE0000FE
 
 #define POPUP_VIET_ON_OFF 900
 #define POPUP_SPELLING 901
@@ -73,6 +74,101 @@ map<UINT, LPCTSTR> menuData = {
 	{POPUP_OPENKEY_EXIT, _T("Thoát")},
 };
 
+static bool getWinUIControlPanelPath(TCHAR* buffer, DWORD bufferSize) {
+	DWORD envSize = GetEnvironmentVariable(_T("OPENKEY_WINUI_PATH"), buffer, bufferSize);
+	if (envSize > 0 && envSize < bufferSize) {
+		return true;
+	}
+
+	HKEY hKey;
+	if (RegOpenKeyEx(HKEY_CURRENT_USER, _T("SOFTWARE\\TuyenMai\\OpenKey"), 0, KEY_READ, &hKey) != ERROR_SUCCESS) {
+		return false;
+	}
+
+	DWORD type = REG_SZ;
+	DWORD byteSize = bufferSize * sizeof(TCHAR);
+	LONG result = RegQueryValueEx(hKey, _T("WinUIControlPanelPath"), 0, &type, reinterpret_cast<LPBYTE>(buffer), &byteSize);
+	RegCloseKey(hKey);
+
+	return result == ERROR_SUCCESS && type == REG_SZ && buffer[0] != 0;
+}
+
+static void openWinUIControlPanel() {
+	TCHAR path[MAX_PATH * 4] = { 0 };
+	if (!getWinUIControlPanelPath(path, ARRAYSIZE(path))) {
+		MessageBeep(MB_ICONWARNING);
+		return;
+	}
+
+	ShellExecute(NULL, _T("open"), path, NULL, NULL, SW_SHOWNORMAL);
+}
+
+static void reloadSettingsFromRegistry() {
+	APP_GET_DATA(vLanguage, 1);
+	APP_GET_DATA(vInputType, 0);
+	vFreeMark = 0;
+	APP_GET_DATA(vCodeTable, 0);
+	APP_GET_DATA(vCheckSpelling, 1);
+	APP_GET_DATA(vUseModernOrthography, 0);
+	APP_GET_DATA(vQuickTelex, 0);
+	APP_GET_DATA(vSwitchKeyStatus, 0x7A000206);
+	APP_GET_DATA(vRestoreIfWrongSpelling, 1);
+	APP_GET_DATA(vFixRecommendBrowser, 1);
+	APP_GET_DATA(vUseMacro, 1);
+	APP_GET_DATA(vUseMacroInEnglishMode, 0);
+	APP_GET_DATA(vAutoCapsMacro, 0);
+	APP_GET_DATA(vSendKeyStepByStep, 1);
+	APP_GET_DATA(vUseGrayIcon, 0);
+	APP_GET_DATA(vShowOnStartUp, 0);
+	APP_GET_DATA(vRunWithWindows, 1);
+	APP_GET_DATA(vUseSmartSwitchKey, 1);
+	APP_GET_DATA(vUpperCaseFirstChar, 0);
+	APP_GET_DATA(vAllowConsonantZFWJ, 0);
+	APP_GET_DATA(vTempOffSpelling, 0);
+	APP_GET_DATA(vQuickStartConsonant, 0);
+	APP_GET_DATA(vQuickEndConsonant, 0);
+	APP_GET_DATA(vSupportMetroApp, 0);
+	APP_GET_DATA(vRunAsAdmin, 0);
+	APP_GET_DATA(vCreateDesktopShortcut, 0);
+	APP_GET_DATA(vCheckNewVersion, 0);
+	APP_GET_DATA(vRememberCode, 1);
+	APP_GET_DATA(vOtherLanguage, 1);
+	APP_GET_DATA(vTempOffOpenKey, 0);
+	APP_GET_DATA(vFixChromiumBrowser, 0);
+
+	APP_GET_DATA(convertToolDontAlertWhenCompleted, 0);
+	APP_GET_DATA(convertToolToAllCaps, 0);
+	APP_GET_DATA(convertToolToAllNonCaps, 0);
+	APP_GET_DATA(convertToolToCapsFirstLetter, 0);
+	APP_GET_DATA(convertToolToCapsEachWord, 0);
+	APP_GET_DATA(convertToolRemoveMark, 0);
+	APP_GET_DATA(convertToolFromCode, 0);
+	APP_GET_DATA(convertToolToCode, 0);
+	APP_GET_DATA(convertToolHotKey, EMPTY_HOTKEY);
+	if (convertToolHotKey == 0) {
+		convertToolHotKey = EMPTY_HOTKEY;
+	}
+
+	vSetCheckSpelling();
+	SystemTrayHelper::updateData();
+}
+
+static void setLanguageFromControlPanel(const int& language) {
+	vLanguage = language ? 1 : 0;
+	APP_SET_DATA(vLanguage, vLanguage);
+	vTempOffEngine(false);
+	vSetCheckSpelling();
+
+	if (vUseSmartSwitchKey) {
+		string& exe = OpenKeyHelper::getLastAppExecuteName();
+		setAppInputMethodStatus(exe, vLanguage | (vCodeTable << 1));
+		saveSmartSwitchKeyData();
+	}
+
+	startNewSession();
+	SystemTrayHelper::updateData();
+}
+
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) {
 	static UINT taskbarCreated;
 
@@ -81,11 +177,20 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 		taskbarCreated = RegisterWindowMessage(_T("TaskbarCreated"));
 		break;
 	case WM_USER+2019:
-		AppDelegate::getInstance()->onControlPanel();
+		openWinUIControlPanel();
+		break;
+	case WM_USER+2020:
+		AppDelegate::getInstance()->onOpenKeyExit();
+		break;
+	case WM_USER+2021:
+		reloadSettingsFromRegistry();
+		break;
+	case WM_USER+2022:
+		setLanguageFromControlPanel((int)wParam);
 		break;
 	case WM_TRAYMESSAGE: {
 		if (lParam == WM_LBUTTONDBLCLK) {
-			AppDelegate::getInstance()->onControlPanel();
+			openWinUIControlPanel();
 		}
 		if (lParam == WM_LBUTTONUP) {
 			AppDelegate::getInstance()->onToggleVietnamese();
@@ -150,7 +255,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam) 
 				AppDelegate::getInstance()->onTableCode(4);
 				break;
 			case POPUP_CONTROL_PANEL:
-				AppDelegate::getInstance()->onControlPanel();
+				openWinUIControlPanel();
 				break;
 			case POPUP_ABOUT_OPENKEY:
 				AppDelegate::getInstance()->onOpenKeyAbout();

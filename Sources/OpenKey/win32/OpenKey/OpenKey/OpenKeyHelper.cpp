@@ -138,6 +138,7 @@ string& OpenKeyHelper::getFrontMostAppExecuteName() {
 	_exeName = _tcsrchr(_exePath, '\\') + 1;
 	if (wcscmp(_exeName, _T("OpenKey64.exe")) == 0 ||
 		wcscmp(_exeName, _T("OpenKey32.exe")) == 0 || 
+		wcscmp(_exeName, _T("OpenKey.WinUI.exe")) == 0 ||
 		wcscmp(_exeName, _T("explorer.exe")) == 0) {
 		return _exeNameUtf8;
 	}

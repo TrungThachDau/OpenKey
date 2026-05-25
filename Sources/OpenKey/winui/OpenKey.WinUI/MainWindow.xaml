@@ -1,0 +1,662 @@
+<Window
+    x:Class="OpenKey.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Title="Cài đặt OpenKey">
+
+    <Grid Background="Transparent">
+        <Grid.Resources>
+        <Style x:Key="SectionTitleTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,26,0,8" />
+        </Style>
+        <Style x:Key="CardTitleTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+        <Style x:Key="CardDescriptionTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="Opacity" Value="0.72" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="SettingCardStyle" TargetType="Border">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="Padding" Value="16,14" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+        </Grid.Resources>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="48" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid x:Name="AppTitleBar" Padding="16,0,18,0" ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300" />
+                <ColumnDefinition Width="520" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                <Image Source="Assets/icon.ico" Width="18" Height="18" />
+                <TextBlock Text="Cài đặt OpenKey" VerticalAlignment="Center" FontWeight="SemiBold" />
+            </StackPanel>
+            <AutoSuggestBox
+                Grid.Column="1"
+                QueryIcon="Find"
+                PlaceholderText="Tìm kiếm cài đặt"
+                VerticalAlignment="Center" />
+        </Grid>
+
+        <NavigationView
+            Grid.Row="1"
+            x:Name="RootNavigationView"
+            Background="Transparent"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="False"
+            PaneDisplayMode="Left"
+            OpenPaneLength="320"
+            SelectionChanged="OnNavigationSelectionChanged">
+            <NavigationView.MenuItems>
+                <NavigationViewItem x:Name="GeneralNavItem" Content="Bộ gõ" IsSelected="True" Tag="General">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Keyboard" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Gõ tắt" Tag="Macro">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Edit" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Hệ thống" Tag="System">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Setting" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+                <NavigationViewItem Content="Thông tin" Tag="About">
+                    <NavigationViewItem.Icon>
+                        <SymbolIcon Symbol="Help" />
+                    </NavigationViewItem.Icon>
+                </NavigationViewItem>
+            </NavigationView.MenuItems>
+
+            <NavigationView.PaneFooter>
+                <StackPanel Padding="0,8,0,12" Spacing="2">
+                    <NavigationViewItem Content="Mã nguồn" Tag="Source" Tapped="OnSourceCodeTapped">
+                        <NavigationViewItem.Icon>
+                            <SymbolIcon Symbol="Link" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="Thoát OpenKey" Tag="Close" Tapped="OnCloseTapped">
+                        <NavigationViewItem.Icon>
+                            <SymbolIcon Symbol="Cancel" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                </StackPanel>
+            </NavigationView.PaneFooter>
+
+            <Grid HorizontalAlignment="Stretch" Padding="28,0,28,20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <TextBlock x:Name="PageTitleTextBlock" Text="Bộ gõ" FontSize="28" FontWeight="SemiBold" Margin="0,4,0,20" />
+
+                <Grid Grid.Row="1">
+                    <ScrollViewer x:Name="GeneralPage" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Padding="0,0,0,28">
+                            <TextBlock Text="Tổng quan" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,8" />
+                            <Border Style="{StaticResource SettingCardStyle}" Padding="18">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Keyboard" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Engine OpenKey" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock x:Name="VersionTextBlock" Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Click="OnCheckUpdateClicked">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <SymbolIcon Symbol="Refresh" />
+                                            <TextBlock Text="Kiểm tra cập nhật" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            <InfoBar x:Name="EngineInfoBar" Margin="0,12,0,0" Severity="Informational" IsOpen="True" />
+
+                            <TextBlock Text="Chế độ nhập" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,8" />
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="260" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Keyboard" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Chế độ gõ" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Chọn tiếng Việt hoặc tiếng Anh cho engine OpenKey gốc." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <RadioButtons Grid.Column="2" x:Name="LanguageRadioButtons" SelectionChanged="OnLanguageChanged">
+                                        <x:String>Tiếng Việt</x:String>
+                                        <x:String>Tiếng Anh</x:String>
+                                    </RadioButtons>
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="260" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Font" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Kiểu gõ" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Telex, VNI hoặc Simple Telex." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2" x:Name="InputTypeComboBox" MinWidth="240" SelectionChanged="OnInputTypeChanged" />
+                                </Grid>
+                            </Border>
+
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="260" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Character" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Bảng mã" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Bảng mã xuất ra cho engine OpenKey gốc." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ComboBox Grid.Column="2" x:Name="CodeTableComboBox" MinWidth="240" SelectionChanged="OnCodeTableChanged" />
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="Hành vi gõ" Style="{StaticResource SectionTitleTextStyle}" />
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Edit" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Chính tả hiện đại" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Đặt dấu theo kiểu oà, uý." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="ModernOrthographySwitch" Tag="vUseModernOrthography" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Repair" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Sửa lỗi gợi ý trình duyệt" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Giảm lỗi gợi ý tự động trong trình duyệt và một số ứng dụng." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="FixRecommendBrowserSwitch" Tag="vFixRecommendBrowser" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Accept" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Kiểm tra chính tả" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Cho phép engine OpenKey kiểm tra chính tả khi gõ." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="CheckSpellingSwitch" Tag="vCheckSpelling" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Undo" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Phục hồi phím khi sai chính tả" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Khôi phục phím gốc nếu từ không hợp lệ." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="RestoreWrongSpellingSwitch" Tag="vRestoreIfWrongSpelling" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Forward" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Cho phép Z, F, W, J làm phụ âm" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Không loại các ký tự này khỏi phụ âm đầu." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="AllowZfwjSwitch" Tag="vAllowConsonantZFWJ" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="BlockContact" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Tạm tắt kiểm tra chính tả bằng Ctrl" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Giữ nhịp gõ nhanh trong các trường hợp đặc biệt." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="TempOffSpellingSwitch" Tag="vTempOffSpelling" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Switch" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Chuyển chế độ thông minh" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Ghi nhớ tiếng Việt/Anh theo từng ứng dụng." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="SmartSwitchSwitch" Tag="vUseSmartSwitchKey" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Up" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Viết hoa chữ cái đầu câu" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Tự viết hoa sau dấu câu hoặc xuống dòng." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="UpperCaseFirstCharSwitch" Tag="vUpperCaseFirstChar" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Save" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Ghi nhớ bảng mã theo ứng dụng" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Tự chuyển bảng mã khi quay lại ứng dụng đã dùng trước đó." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="RememberCodeSwitch" Tag="vRememberCode" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Globe" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Tự tắt tiếng Việt khi gõ ngôn ngữ khác" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Hạn chế can thiệp khi Windows IME khác đang được dùng." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="OtherLanguageSwitch" Tag="vOtherLanguage" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="DisableUpdates" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Tạm tắt OpenKey bằng Alt" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Tạm ngưng engine OpenKey khi cần nhập thô." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="TempOffOpenKeySwitch" Tag="vTempOffOpenKey" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="Phím tắt chuyển chế độ" Style="{StaticResource SectionTitleTextStyle}" />
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="360" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Keyboard" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Phím chuyển chế độ" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Tổ hợp phím để chuyển Anh/Việt từ engine OpenKey gốc." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Spacing="8">
+                                        <StackPanel Orientation="Horizontal" Spacing="12">
+                                            <CheckBox x:Name="SwitchCtrlCheckBox" Content="Ctrl" Checked="OnSwitchKeyChanged" Unchecked="OnSwitchKeyChanged" />
+                                            <CheckBox x:Name="SwitchAltCheckBox" Content="Alt" Checked="OnSwitchKeyChanged" Unchecked="OnSwitchKeyChanged" />
+                                            <CheckBox x:Name="SwitchWinCheckBox" Content="Win" Checked="OnSwitchKeyChanged" Unchecked="OnSwitchKeyChanged" />
+                                            <CheckBox x:Name="SwitchShiftCheckBox" Content="Shift" Checked="OnSwitchKeyChanged" Unchecked="OnSwitchKeyChanged" />
+                                        </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <ComboBox x:Name="SwitchKeyComboBox" Width="170" SelectionChanged="OnSwitchKeyChanged" />
+                                            <CheckBox x:Name="SwitchBeepCheckBox" Content="Âm báo" VerticalAlignment="Center" Checked="OnSwitchKeyChanged" Unchecked="OnSwitchKeyChanged" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <ScrollViewer x:Name="MacroPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Padding="0,0,0,28">
+                            <TextBlock Text="Gõ tắt và gõ nhanh" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,8" />
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Forward" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Gõ tắt phụ âm đầu" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="f thành ph, j thành gi, w thành qu." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="QuickStartConsonantSwitch" Tag="vQuickStartConsonant" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Back" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Gõ tắt phụ âm cuối" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="g thành ng, h thành nh, k thành ch." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="QuickEndConsonantSwitch" Tag="vQuickEndConsonant" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Forward" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Telex nhanh" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="cc, gg, kk, nn, qq, pp, tt theo kiểu gõ nhanh." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="QuickTelexSwitch" Tag="vQuickTelex" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Page" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Gõ tắt" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Bật thay thế từ theo bảng gõ tắt gốc." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="UseMacroSwitch" Tag="vUseMacro" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Globe" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Dùng gõ tắt trong tiếng Anh" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Cho phép gõ tắt chạy ngay cả khi engine đang ở chế độ tiếng Anh." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="MacroInEnglishSwitch" Tag="vUseMacroInEnglishMode" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Font" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Tự viết hoa khi gõ tắt" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Giữ kiểu viết hoa khi cụm gõ tắt được thay thế." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="MacroAutoCapsSwitch" Tag="vAutoCapsMacro" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <ScrollViewer x:Name="SystemPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Padding="0,0,0,28">
+                            <TextBlock Text="Khởi động và khay hệ thống" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,8" />
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Favorite" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Biểu tượng xám" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Dùng biểu tượng khay hệ thống màu xám." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="GrayIconSwitch" Tag="vUseGrayIcon" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="OpenPane" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Hiện bảng điều khiển khi mở" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Áp dụng cho engine gốc khi chạy độc lập." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="ShowOnStartupSwitch" Tag="vShowOnStartUp" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Play" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Chạy cùng Windows" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Đăng ký OpenKey WinUI trong startup của người dùng hiện tại." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="RunWithWindowsSwitch" Tag="vRunWithWindows" Toggled="OnRunWithWindowsToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Admin" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Chạy với quyền quản trị" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Tùy chọn tương thích với engine Win32 gốc." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="RunAsAdminSwitch" Tag="vRunAsAdmin" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Refresh" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Tự kiểm tra phiên bản mới" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Kiểm tra bản mới khi engine OpenKey khởi động." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="CheckNewVersionSwitch" Tag="vCheckNewVersion" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+
+                            <TextBlock Text="Tương thích" Style="{StaticResource SectionTitleTextStyle}" />
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="View" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Hỗ trợ ứng dụng Microsoft Store" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Bật tương thích cho ứng dụng chạy qua ApplicationFrameHost." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="SupportMetroAppSwitch" Tag="vSupportMetroApp" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Paste" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Dùng bộ nhớ tạm để gửi phím" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Dùng đường gửi chuỗi thay vì gửi từng phím." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="UseClipboardSwitch" Tag="vSendKeyStepByStep" Toggled="OnUseClipboardToggled" />
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Globe" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Sửa lỗi Chromium" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Tối ưu cách xử lý với Chrome, Edge và Brave." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="2" x:Name="FixChromiumSwitch" Tag="vFixChromiumBrowser" Toggled="OnOptionToggled" />
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+
+                    <ScrollViewer x:Name="AboutPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
+                        <StackPanel Padding="0,0,0,28">
+                            <TextBlock Text="Phiên bản và liên kết" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,8" />
+                            <Border Style="{StaticResource SettingCardStyle}" Padding="18">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Keyboard" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="OpenKey WinUI" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Bảng điều khiển WinUI dùng engine OpenKey gốc." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Mã nguồn" Click="OnSourceCodeClicked" />
+                                        <Button Content="Trang Facebook" Click="OnFanpageClicked" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                            <Border Style="{StaticResource SettingCardStyle}" Padding="18">
+                                <Grid ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="42" />
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Refresh" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="3">
+                                        <TextBlock Text="Cập nhật" Style="{StaticResource CardTitleTextStyle}" />
+                                        <TextBlock Text="Kiểm tra thông tin phiên bản Windows mới nhất." Style="{StaticResource CardDescriptionTextStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2" Click="OnCheckUpdateClicked">
+                                        <StackPanel Orientation="Horizontal" Spacing="8">
+                                            <SymbolIcon Symbol="Refresh" />
+                                            <TextBlock Text="Kiểm tra cập nhật" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+
+                <InfoBar Grid.Row="2" x:Name="StatusInfoBar" Margin="0,14,0,0" IsOpen="False" IsClosable="True" />
+            </Grid>
+        </NavigationView>
+    </Grid>
+</Window>

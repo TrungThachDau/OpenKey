@@ -1,0 +1,24 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OpenKey.WinUI", "OpenKey.WinUI\OpenKey.WinUI.csproj", "{C9FD2AC5-0600-1CC7-4777-8C44B1465D30}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C9FD2AC5-0600-1CC7-4777-8C44B1465D30}.Debug|x64.ActiveCfg = Debug|x64
+		{C9FD2AC5-0600-1CC7-4777-8C44B1465D30}.Debug|x64.Build.0 = Debug|x64
+		{C9FD2AC5-0600-1CC7-4777-8C44B1465D30}.Release|x64.ActiveCfg = Release|x64
+		{C9FD2AC5-0600-1CC7-4777-8C44B1465D30}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {23F95FC6-8207-4CC5-807A-21602CB594DA}
+	EndGlobalSection
+EndGlobal
