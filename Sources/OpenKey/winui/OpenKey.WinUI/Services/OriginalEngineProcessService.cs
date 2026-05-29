@@ -62,6 +62,12 @@ public sealed class OriginalEngineProcessService
     {
         RequestExit();
         WaitUntilStopped(TimeSpan.FromSeconds(3));
+        if (IsRunning)
+        {
+            KillEngineWindowProcess();
+            WaitUntilStopped(TimeSpan.FromSeconds(2));
+        }
+
         EnsureRunning();
     }
 
@@ -124,6 +130,33 @@ public sealed class OriginalEngineProcessService
         }
     }
 
+    private static void KillEngineWindowProcess()
+    {
+        IntPtr hwnd = FindWindow(EngineWindowClass, null);
+        if (hwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        GetWindowThreadProcessId(hwnd, out int processId);
+        if (processId <= 0 || processId == Environment.ProcessId)
+        {
+            return;
+        }
+
+        try
+        {
+            using Process process = Process.GetProcessById(processId);
+            process.Kill();
+        }
+        catch (ArgumentException)
+        {
+        }
+        catch (InvalidOperationException)
+        {
+        }
+    }
+
     private static string? ResolveEnginePath()
     {
         string[] directCandidates =
@@ -160,4 +193,7 @@ public sealed class OriginalEngineProcessService
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out int processId);
 }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -16,6 +17,13 @@ namespace OpenKey.WinUI;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private const int ModifierOnlySwitchKey = 0xFE;
+    private const double GeneralTwoColumnMinWidth = 775;
+    private const int MinWindowWidth = 775;
+    private const int MinWindowHeight = 560;
+    private const uint WmGetMinMaxInfo = 0x0024;
+    private static readonly WindowSubclassProc WindowSubclassCallback = OnWindowSubclass;
+
     private static readonly IReadOnlyList<string> InputTypes = ["Telex", "VNI", "Telex đơn giản"];
     private static readonly IReadOnlyList<string> CodeTables =
     [
@@ -29,6 +37,8 @@ public sealed partial class MainWindow : Window
     private static readonly IReadOnlyList<KeyChoice> SwitchKeys =
     [
         new("Không đặt", 0),
+        new("Ctrl + Shift", ModifierOnlySwitchKey, 0x900),
+        new("Shift", ModifierOnlySwitchKey, 0x800),
         new("A", 0x41),
         new("B", 0x42),
         new("C", 0x43),
@@ -75,6 +85,7 @@ public sealed partial class MainWindow : Window
     private readonly OriginalEngineProcessService _engineProcessService = new();
     private OpenKeyOptions _options = new();
     private bool _isLoading;
+    private bool _isApplyingSwitchKeyPreset;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -82,8 +93,9 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        UpdatePaneToggleButtonVisual();
         ExtendsContentIntoTitleBar = true;
-        SetTitleBar(AppTitleBar);
+        SetTitleBar(TitleDragRegion);
         ApplyMicaBackdrop();
         SetWindowSize();
         InitializeStaticLists();
@@ -177,15 +189,24 @@ public sealed partial class MainWindow : Window
     private void LoadSwitchKey()
     {
         int switchKey = _options.SwitchKeyStatus & 0xFF;
+        int fallbackSwitchKey = (_options.SwitchKeyStatus >> 24) & 0xFF;
+        if (!SwitchKeys.Any(item => item.Code == switchKey) && SwitchKeys.Any(item => item.Code == fallbackSwitchKey))
+        {
+            switchKey = fallbackSwitchKey;
+        }
+
         SwitchCtrlCheckBox.IsChecked = (_options.SwitchKeyStatus & 0x100) != 0;
         SwitchAltCheckBox.IsChecked = (_options.SwitchKeyStatus & 0x200) != 0;
         SwitchWinCheckBox.IsChecked = (_options.SwitchKeyStatus & 0x400) != 0;
         SwitchShiftCheckBox.IsChecked = (_options.SwitchKeyStatus & 0x800) != 0;
         SwitchBeepCheckBox.IsChecked = (_options.SwitchKeyStatus & 0x8000) != 0;
 
+        int switchModifiers = _options.SwitchKeyStatus & 0xF00;
         int selectedIndex = SwitchKeys
-            .Select((item, index) => new { item.Code, index })
-            .FirstOrDefault(item => item.Code == switchKey)?.index ?? 0;
+            .Select((item, index) => new { item, index })
+            .FirstOrDefault(item =>
+                item.item.Code == switchKey &&
+                (item.item.ModifierPreset == 0 || item.item.ModifierPreset == switchModifiers))?.index ?? 0;
         SwitchKeyComboBox.SelectedIndex = selectedIndex;
     }
 
@@ -228,11 +249,32 @@ public sealed partial class MainWindow : Window
 
     private void OnSwitchKeyChanged(object sender, RoutedEventArgs e)
     {
+        if (_isApplyingSwitchKeyPreset)
+        {
+            return;
+        }
+
         SaveSwitchKey();
     }
 
     private void OnSwitchKeyChanged(object sender, SelectionChangedEventArgs e)
     {
+        if (!_isLoading && ReferenceEquals(sender, SwitchKeyComboBox) && SwitchKeyComboBox.SelectedItem is KeyChoice { ModifierPreset: > 0 } keyChoice)
+        {
+            _isApplyingSwitchKeyPreset = true;
+            try
+            {
+                SwitchCtrlCheckBox.IsChecked = (keyChoice.ModifierPreset & 0x100) != 0;
+                SwitchAltCheckBox.IsChecked = (keyChoice.ModifierPreset & 0x200) != 0;
+                SwitchWinCheckBox.IsChecked = (keyChoice.ModifierPreset & 0x400) != 0;
+                SwitchShiftCheckBox.IsChecked = (keyChoice.ModifierPreset & 0x800) != 0;
+            }
+            finally
+            {
+                _isApplyingSwitchKeyPreset = false;
+            }
+        }
+
         SaveSwitchKey();
     }
 
@@ -243,23 +285,48 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        int status = keyChoice.Code;
-        if (SwitchCtrlCheckBox.IsChecked == true)
+        int keyCode = keyChoice.Code;
+        int status = keyCode | (keyCode << 24);
+        int modifiers = keyChoice.ModifierPreset;
+        if (modifiers == 0)
+        {
+            if (SwitchCtrlCheckBox.IsChecked == true)
+            {
+                modifiers |= 0x100;
+            }
+
+            if (SwitchAltCheckBox.IsChecked == true)
+            {
+                modifiers |= 0x200;
+            }
+
+            if (SwitchWinCheckBox.IsChecked == true)
+            {
+                modifiers |= 0x400;
+            }
+
+            if (SwitchShiftCheckBox.IsChecked == true || keyCode == ModifierOnlySwitchKey)
+            {
+                modifiers |= 0x800;
+            }
+        }
+
+        if ((modifiers & 0x100) != 0)
         {
             status |= 0x100;
         }
 
-        if (SwitchAltCheckBox.IsChecked == true)
+        if ((modifiers & 0x200) != 0)
         {
             status |= 0x200;
         }
 
-        if (SwitchWinCheckBox.IsChecked == true)
+        if ((modifiers & 0x400) != 0)
         {
             status |= 0x400;
         }
 
-        if (SwitchShiftCheckBox.IsChecked == true)
+        if ((modifiers & 0x800) != 0)
         {
             status |= 0x800;
         }
@@ -271,7 +338,7 @@ public sealed partial class MainWindow : Window
 
         _options.SwitchKeyStatus = status;
         _registryStore.SaveInt("vSwitchKeyStatus", status);
-        ReloadOriginalEngineSettings();
+        RestartOriginalEngineForHotKey();
     }
 
     private void OnOptionToggled(object sender, RoutedEventArgs e)
@@ -363,6 +430,31 @@ public sealed partial class MainWindow : Window
         Close();
     }
 
+    private void OnPaneToggleClicked(object sender, RoutedEventArgs e)
+    {
+        RootNavigationView.IsPaneOpen = !RootNavigationView.IsPaneOpen;
+        UpdatePaneToggleButtonVisual();
+    }
+
+    private void OnRootNavigationViewPaneChanged(NavigationView sender, object args)
+    {
+        UpdatePaneToggleButtonVisual();
+    }
+
+    private void UpdatePaneToggleButtonVisual()
+    {
+        PaneToggleButton.Background = RootNavigationView.IsPaneOpen
+            ? GetTitleBarButtonActiveBackground()
+            : new SolidColorBrush(Colors.Transparent);
+    }
+
+    private Brush GetTitleBarButtonActiveBackground()
+    {
+        return PaneToggleButton.ActualTheme == ElementTheme.Light
+            ? new SolidColorBrush(Windows.UI.Color.FromArgb(18, 0, 0, 0))
+            : new SolidColorBrush(Windows.UI.Color.FromArgb(34, 255, 255, 255));
+    }
+
     private void OnSourceCodeTapped(object sender, TappedRoutedEventArgs e)
     {
         OpenUrl("https://github.com/tuyenvm/OpenKey");
@@ -373,6 +465,16 @@ public sealed partial class MainWindow : Window
     {
         Close();
         e.Handled = true;
+    }
+
+    private void OnGeneralContentSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        bool useSingleColumn = e.NewSize.Width < GeneralTwoColumnMinWidth;
+        GeneralRightColumn.Width = useSingleColumn ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
+        GeneralBehaviorColumn.SetValue(Grid.RowProperty, useSingleColumn ? 2 : 1);
+        GeneralBehaviorColumn.SetValue(Grid.ColumnProperty, useSingleColumn ? 0 : 1);
+        GeneralContentGrid.RowSpacing = useSingleColumn ? 0 : 0;
+        GeneralContentGrid.ColumnSpacing = useSingleColumn ? 0 : 20;
     }
 
     private void OnNavigationSelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
@@ -421,18 +523,33 @@ public sealed partial class MainWindow : Window
         try
         {
             SaveControlPanelPath();
-            if (!_engineProcessService.RequestReloadSettings())
-            {
-                _engineProcessService.EnsureRunning();
-            }
+            _engineProcessService.Restart();
 
-            EngineInfoBar.Message = $"Engine OpenKey gốc đã nạp lại cài đặt: {_engineProcessService.EnginePath}";
+            EngineInfoBar.Message = $"Engine OpenKey gốc đã áp dụng cài đặt: {_engineProcessService.EnginePath}";
             EngineInfoBar.Severity = InfoBarSeverity.Success;
             EngineInfoBar.IsOpen = true;
         }
         catch (Exception ex)
         {
-            EngineInfoBar.Message = $"Không reload được engine gốc: {ex.Message}";
+            EngineInfoBar.Message = $"Không áp dụng được cài đặt vào engine gốc: {ex.Message}";
+            EngineInfoBar.Severity = InfoBarSeverity.Error;
+            EngineInfoBar.IsOpen = true;
+        }
+    }
+
+    private void RestartOriginalEngineForHotKey()
+    {
+        try
+        {
+            SaveControlPanelPath();
+            _engineProcessService.Restart();
+            EngineInfoBar.Message = $"Engine OpenKey gốc đã áp dụng phím chuyển chế độ: {_engineProcessService.EnginePath}";
+            EngineInfoBar.Severity = InfoBarSeverity.Success;
+            EngineInfoBar.IsOpen = true;
+        }
+        catch (Exception ex)
+        {
+            EngineInfoBar.Message = $"Không áp dụng được phím chuyển chế độ: {ex.Message}";
             EngineInfoBar.Severity = InfoBarSeverity.Error;
             EngineInfoBar.IsOpen = true;
         }
@@ -450,8 +567,8 @@ public sealed partial class MainWindow : Window
             }
 
             EngineInfoBar.Message = language == 1
-                ? "Engine OpenKey gốc đã chuyển sang tiếng Việt."
-                : "Engine OpenKey gốc đã chuyển sang tiếng Anh.";
+                ? "Đã chuyển sang tiếng Việt."
+                : "Đã chuyển sang tiếng Anh.";
             EngineInfoBar.Severity = InfoBarSeverity.Success;
             EngineInfoBar.IsOpen = true;
         }
@@ -465,7 +582,8 @@ public sealed partial class MainWindow : Window
 
     private void SetWindowSize()
     {
-        nint hwnd = WindowNative.GetWindowHandle(this);
+        IntPtr hwnd = WindowNative.GetWindowHandle(this);
+        SetWindowSubclass(hwnd, WindowSubclassCallback, 1, 0);
         WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
         Microsoft.UI.Windowing.AppWindow appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
         appWindow.Resize(new SizeInt32(1180, 760));
@@ -479,6 +597,20 @@ public sealed partial class MainWindow : Window
     private static int ClampIndex(int index, int count)
     {
         return index >= 0 && index < count ? index : 0;
+    }
+
+    private static IntPtr OnWindowSubclass(IntPtr hwnd, uint message, UIntPtr wParam, IntPtr lParam, UIntPtr subclassId, UIntPtr refData)
+    {
+        if (message == WmGetMinMaxInfo)
+        {
+            MinMaxInfo minMaxInfo = Marshal.PtrToStructure<MinMaxInfo>(lParam);
+            minMaxInfo.MinTrackSize.X = Math.Max(minMaxInfo.MinTrackSize.X, MinWindowWidth);
+            minMaxInfo.MinTrackSize.Y = Math.Max(minMaxInfo.MinTrackSize.Y, MinWindowHeight);
+            Marshal.StructureToPtr(minMaxInfo, lParam, false);
+            return IntPtr.Zero;
+        }
+
+        return DefSubclassProc(hwnd, message, wParam, lParam);
     }
 
     private void SaveControlPanelPath()
@@ -497,5 +629,31 @@ public sealed partial class MainWindow : Window
         });
     }
 
-    private sealed record KeyChoice(string Name, int Code);
+    private sealed record KeyChoice(string Name, int Code, int ModifierPreset = 0);
+
+    private delegate IntPtr WindowSubclassProc(IntPtr hwnd, uint message, UIntPtr wParam, IntPtr lParam, UIntPtr subclassId, UIntPtr refData);
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct NativePoint
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MinMaxInfo
+    {
+        public NativePoint Reserved;
+        public NativePoint MaxSize;
+        public NativePoint MaxPosition;
+        public NativePoint MinTrackSize;
+        public NativePoint MaxTrackSize;
+    }
+
+    [DllImport("comctl32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetWindowSubclass(IntPtr hwnd, WindowSubclassProc subclassProc, nuint subclassId, nuint refData);
+
+    [DllImport("comctl32.dll")]
+    private static extern IntPtr DefSubclassProc(IntPtr hwnd, uint message, UIntPtr wParam, IntPtr lParam);
 }

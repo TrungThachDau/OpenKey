@@ -12,3 +12,4 @@
 /Sources/OpenKey/winui/**/bin/
 /Sources/OpenKey/winui/**/obj/
 /artifacts
+Sources/OpenKey/winui/.vs
