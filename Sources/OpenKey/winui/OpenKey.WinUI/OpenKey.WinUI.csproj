@@ -24,6 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\win32\OpenKey\OpenKey\x64\Release\OpenKey64.exe" Link="OpenKey64.exe" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\OpenKeyNative\x64\$(Configuration)\OpenKeyNative.dll" Link="OpenKeyNative.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\win32\OpenKey\OpenKey\StatusViet.ico" Link="Assets\StatusViet.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="..\..\win32\OpenKey\OpenKey\StatusEng.ico" Link="Assets\StatusEng.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

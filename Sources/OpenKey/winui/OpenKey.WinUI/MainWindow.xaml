@@ -96,7 +96,6 @@
         <Style TargetType="ToggleSwitch">
             <Setter Property="HorizontalAlignment" Value="Right" />
             <Setter Property="VerticalAlignment" Value="Center" />
-            <Setter Property="FlowDirection" Value="RightToLeft" />
             <Setter Property="OnContent" Value="Bật" />
             <Setter Property="OffContent" Value="Tắt" />
         </Style>
@@ -317,7 +316,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="ModernOrthographySwitch" Tag="vUseModernOrthography" Toggled="OnOptionToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource CompactSettingCardStyle}">
+                            <!-- TODO(native-dll): Port browser autocomplete workaround before showing this option again. -->
+                            <Border Style="{StaticResource CompactSettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -387,7 +387,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="TempOffSpellingSwitch" Tag="vTempOffSpelling" Toggled="OnOptionToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource CompactSettingCardStyle}">
+                            <!-- TODO(native-dll): Port foreground app tracking and smart-switch persistence. -->
+                            <Border Style="{StaticResource CompactSettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -415,7 +416,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="UpperCaseFirstCharSwitch" Tag="vUpperCaseFirstChar" Toggled="OnOptionToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource CompactSettingCardStyle}">
+                            <!-- TODO(native-dll): Port per-application code table memory. -->
+                            <Border Style="{StaticResource CompactSettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -429,7 +431,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="RememberCodeSwitch" Tag="vRememberCode" Toggled="OnOptionToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource CompactSettingCardStyle}">
+                            <!-- TODO(native-dll): Port other-language detection before showing this option again. -->
+                            <Border Style="{StaticResource CompactSettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -561,7 +564,8 @@
                     <ScrollViewer x:Name="SystemPage" Visibility="Collapsed" VerticalScrollBarVisibility="Auto">
                         <StackPanel Padding="0,0,28,28">
                             <TextBlock Text="Khởi động và khay hệ thống" Style="{StaticResource SectionTitleTextStyle}" Margin="0,0,0,8" />
-                            <Border Style="{StaticResource SettingCardStyle}">
+                            <!-- TODO(native-dll): Reconnect gray status icon selection for the new in-process tray icon. -->
+                            <Border Style="{StaticResource SettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -576,7 +580,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="GrayIconSwitch" Tag="vUseGrayIcon" Toggled="OnOptionToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource SettingCardStyle}">
+                            <!-- TODO(native-dll): This option belonged to the old standalone Win32 engine startup flow. -->
+                            <Border Style="{StaticResource SettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -606,7 +611,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="RunWithWindowsSwitch" Tag="vRunWithWindows" Toggled="OnRunWithWindowsToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource SettingCardStyle}">
+                            <!-- TODO(native-dll): Port elevated relaunch/startup flow for the WinUI-hosted engine. -->
+                            <Border Style="{StaticResource SettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -621,7 +627,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="RunAsAdminSwitch" Tag="vRunAsAdmin" Toggled="OnOptionToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource SettingCardStyle}">
+                            <!-- TODO(native-dll): Auto update check is not wired into the native-DLL startup path yet. -->
+                            <Border Style="{StaticResource SettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -637,8 +644,9 @@
                                 </Grid>
                             </Border>
 
-                            <TextBlock Text="Tương thích" Style="{StaticResource SectionTitleTextStyle}" />
-                            <Border Style="{StaticResource SettingCardStyle}">
+                            <!-- TODO(native-dll): Hide compatibility section until these old Win32-engine adapters are ported. -->
+                            <TextBlock Text="Tương thích" Style="{StaticResource SectionTitleTextStyle}" Visibility="Collapsed" />
+                            <Border Style="{StaticResource SettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -653,7 +661,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="SupportMetroAppSwitch" Tag="vSupportMetroApp" Toggled="OnOptionToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource SettingCardStyle}">
+                            <!-- TODO(native-dll): Port clipboard/Shift+Insert send path before showing this option again. -->
+                            <Border Style="{StaticResource SettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -668,7 +677,8 @@
                                     <ToggleSwitch Grid.Column="2" x:Name="UseClipboardSwitch" Tag="vSendKeyStepByStep" Toggled="OnUseClipboardToggled" />
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource SettingCardStyle}">
+                            <!-- TODO(native-dll): Port Chromium-specific autocomplete workaround. -->
+                            <Border Style="{StaticResource SettingCardStyle}" Visibility="Collapsed">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -703,11 +713,11 @@
                                     </StackPanel>
                                     <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
                                         <Button Content="Mã nguồn" Click="OnSourceCodeClicked" />
-                                        <Button Content="Trang Facebook" Click="OnFanpageClicked" />
+                                        <Button Content="Mã nguồn gốc" Click="OnSourceCodeOriginClicked" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
-                            <Border Style="{StaticResource SettingCardStyle}" Padding="18">
+                            <!-- <Border Style="{StaticResource SettingCardStyle}" Padding="18">
                                 <Grid ColumnSpacing="16">
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="42" />
@@ -726,7 +736,7 @@
                                         </StackPanel>
                                     </Button>
                                 </Grid>
-                            </Border>
+                            </Border> -->
                         </StackPanel>
                     </ScrollViewer>
                 </Grid>

@@ -13,3 +13,7 @@
 /Sources/OpenKey/winui/**/obj/
 /artifacts
 Sources/OpenKey/winui/.vs
+Sources/OpenKey/OpenKeyNative/.vs
+Sources/OpenKey/OpenKeyNative/OpenKeyNative
+Sources/OpenKey/OpenKeyNative/x64/
+Sources/OpenKey/OpenKeyNative/x64/Debug/OpenKeyNative.dll

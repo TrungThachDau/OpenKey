@@ -22,7 +22,13 @@ public sealed partial class MainWindow : Window
     private const int MinWindowWidth = 775;
     private const int MinWindowHeight = 560;
     private const uint WmGetMinMaxInfo = 0x0024;
+    private const uint WmTrayIcon = 0x0400 + 2030;
+    private const int WmLeftButtonUp = 0x0202;
+    private const int WmLeftButtonDoubleClick = 0x0203;
+    private const int SwHide = 0;
+    private const int SwRestore = 9;
     private static readonly WindowSubclassProc WindowSubclassCallback = OnWindowSubclass;
+    private static MainWindow? CurrentWindow;
 
     private static readonly IReadOnlyList<string> InputTypes = ["Telex", "VNI", "Telex đơn giản"];
     private static readonly IReadOnlyList<string> CodeTables =
@@ -82,16 +88,21 @@ public sealed partial class MainWindow : Window
     private readonly OpenKeyRegistryStore _registryStore = new();
     private readonly StartupRegistrationService _startupRegistrationService = new();
     private readonly OpenKeyUpdateService _updateService = new();
-    private readonly OriginalEngineProcessService _engineProcessService = new();
+    private readonly NativeEngineService _engineProcessService = new();
+    private readonly DispatcherTimer _languageSyncTimer = new();
+    private TrayIconService? _trayIconService;
+    private Microsoft.UI.Windowing.AppWindow? _appWindow;
     private OpenKeyOptions _options = new();
     private bool _isLoading;
     private bool _isApplyingSwitchKeyPreset;
+    private bool _isExiting;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="MainWindow"/> class.
     /// </summary>
     public MainWindow()
     {
+        CurrentWindow = this;
         InitializeComponent();
         UpdatePaneToggleButtonVisual();
         ExtendsContentIntoTitleBar = true;
@@ -103,6 +114,8 @@ public sealed partial class MainWindow : Window
         _registryStore.SaveBool("vShowOnStartUp", false);
         LoadOptions();
         StartOriginalEngine();
+        InitializeTrayIcon();
+        Closed += OnWindowClosed;
     }
 
     private void InitializeStaticLists()
@@ -154,10 +167,11 @@ public sealed partial class MainWindow : Window
         UpdateSpellingDependencies();
         VersionTextBlock.Text = $"Nền tảng: .NET 10, Windows App SDK. Tiến trình: {Environment.ProcessId}";
         EngineInfoBar.Message = _engineProcessService.IsRunning
-            ? $"Engine OpenKey gốc đang chạy: {_engineProcessService.EnginePath}"
-            : "Engine OpenKey gốc chưa chạy.";
+            ? $"OpenKey Native đang chạy: {_engineProcessService.EnginePath}"
+            : "OpenKey Native chưa chạy.";
         EngineInfoBar.IsOpen = true;
         _isLoading = false;
+        UpdateTrayLanguage(_options.Language);
     }
 
     private void StartOriginalEngine()
@@ -174,13 +188,13 @@ public sealed partial class MainWindow : Window
                 _engineProcessService.EnsureRunning();
             }
 
-            EngineInfoBar.Message = $"Engine OpenKey gốc đang chạy: {_engineProcessService.EnginePath}";
+            EngineInfoBar.Message = $"OpenKey Native đang chạy: {_engineProcessService.EnginePath}";
             EngineInfoBar.Severity = InfoBarSeverity.Success;
             EngineInfoBar.IsOpen = true;
         }
         catch (Exception ex)
         {
-            EngineInfoBar.Message = $"Không bật được engine gốc: {ex.Message}";
+            EngineInfoBar.Message = $"Không bật được OpenKey Native: {ex.Message}";
             EngineInfoBar.Severity = InfoBarSeverity.Error;
             EngineInfoBar.IsOpen = true;
         }
@@ -221,6 +235,7 @@ public sealed partial class MainWindow : Window
         _options.Language = language;
         _registryStore.SaveInt("vLanguage", language);
         SetOriginalEngineLanguage(language);
+        UpdateTrayLanguage(language);
     }
 
     private void OnInputTypeChanged(object sender, SelectionChangedEventArgs e)
@@ -417,17 +432,17 @@ public sealed partial class MainWindow : Window
 
     private void OnSourceCodeClicked(object sender, RoutedEventArgs e)
     {
-        OpenUrl("https://github.com/tuyenvm/OpenKey");
+        OpenUrl("https://github.com/TrungThachDau/OpenKey");
     }
 
-    private void OnFanpageClicked(object sender, RoutedEventArgs e)
+    private void OnSourceCodeOriginClicked(object sender, RoutedEventArgs e)
     {
-        OpenUrl("https://www.facebook.com/OpenKeyVN");
+        OpenUrl("https://github.com/tuyenvm/OpenKey");
     }
 
     private void OnExitClicked(object sender, RoutedEventArgs e)
     {
-        Close();
+        ExitApplication();
     }
 
     private void OnPaneToggleClicked(object sender, RoutedEventArgs e)
@@ -457,14 +472,97 @@ public sealed partial class MainWindow : Window
 
     private void OnSourceCodeTapped(object sender, TappedRoutedEventArgs e)
     {
-        OpenUrl("https://github.com/tuyenvm/OpenKey");
+        OpenUrl("https://github.com/TrungThachDau/OpenKey");
         e.Handled = true;
     }
 
     private void OnCloseTapped(object sender, TappedRoutedEventArgs e)
     {
-        Close();
+        ExitApplication();
         e.Handled = true;
+    }
+
+    private void InitializeTrayIcon()
+    {
+        _trayIconService = new TrayIconService(WindowNative.GetWindowHandle(this), WmTrayIcon);
+        UpdateTrayLanguage(_options.Language);
+        _languageSyncTimer.Interval = TimeSpan.FromMilliseconds(500);
+        _languageSyncTimer.Tick += OnLanguageSyncTimerTick;
+        _languageSyncTimer.Start();
+    }
+
+    private void ToggleLanguageFromTrayIcon()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            int language = _options.Language == 1 ? 0 : 1;
+            _options.Language = language;
+            _registryStore.SaveInt("vLanguage", language);
+
+            _isLoading = true;
+            LanguageRadioButtons.SelectedIndex = language == 1 ? 0 : 1;
+            _isLoading = false;
+
+            SetOriginalEngineLanguage(language);
+            UpdateTrayLanguage(language);
+        });
+    }
+
+    private void ShowSettingsWindowFromTrayIcon()
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            IntPtr hwnd = WindowNative.GetWindowHandle(this);
+            ShowWindow(hwnd, SwRestore);
+            SetForegroundWindow(hwnd);
+            Activate();
+        });
+    }
+
+    private void OnLanguageSyncTimerTick(object? sender, object e)
+    {
+        try
+        {
+            int language = _engineProcessService.GetLanguage();
+            if (_options.Language == language)
+            {
+                return;
+            }
+
+            _options.Language = language;
+            _isLoading = true;
+            LanguageRadioButtons.SelectedIndex = language == 1 ? 0 : 1;
+            _isLoading = false;
+            UpdateTrayLanguage(language);
+        }
+        catch (DllNotFoundException)
+        {
+        }
+        catch (EntryPointNotFoundException)
+        {
+        }
+    }
+
+    private void UpdateTrayLanguage(int language)
+    {
+        _trayIconService?.UpdateLanguage(language);
+    }
+
+    private void OnWindowClosed(object sender, WindowEventArgs args)
+    {
+        _languageSyncTimer.Stop();
+        _trayIconService?.Dispose();
+        _engineProcessService.RequestExit();
+        if (ReferenceEquals(CurrentWindow, this))
+        {
+            CurrentWindow = null;
+        }
+    }
+
+    private void ExitApplication()
+    {
+        _isExiting = true;
+        Close();
     }
 
     private void OnGeneralContentSizeChanged(object sender, SizeChangedEventArgs e)
@@ -492,7 +590,7 @@ public sealed partial class MainWindow : Window
 
         if (tag == "Close")
         {
-            Close();
+            ExitApplication();
             return;
         }
 
@@ -525,7 +623,8 @@ public sealed partial class MainWindow : Window
             SaveControlPanelPath();
             _engineProcessService.Restart();
 
-            EngineInfoBar.Message = $"Engine OpenKey gốc đã áp dụng cài đặt: {_engineProcessService.EnginePath}";
+            // EngineInfoBar.Message = $"OpenKey Native đã áp dụng cài đặt: {_engineProcessService.EnginePath}";
+            EngineInfoBar.Message = $"Đã áp dụng cài đặt";
             EngineInfoBar.Severity = InfoBarSeverity.Success;
             EngineInfoBar.IsOpen = true;
         }
@@ -543,7 +642,7 @@ public sealed partial class MainWindow : Window
         {
             SaveControlPanelPath();
             _engineProcessService.Restart();
-            EngineInfoBar.Message = $"Engine OpenKey gốc đã áp dụng phím chuyển chế độ: {_engineProcessService.EnginePath}";
+            EngineInfoBar.Message = $"OpenKey Native đã áp dụng phím chuyển chế độ: {_engineProcessService.EnginePath}";
             EngineInfoBar.Severity = InfoBarSeverity.Success;
             EngineInfoBar.IsOpen = true;
         }
@@ -585,8 +684,20 @@ public sealed partial class MainWindow : Window
         IntPtr hwnd = WindowNative.GetWindowHandle(this);
         SetWindowSubclass(hwnd, WindowSubclassCallback, 1, 0);
         WindowId windowId = Microsoft.UI.Win32Interop.GetWindowIdFromWindow(hwnd);
-        Microsoft.UI.Windowing.AppWindow appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
-        appWindow.Resize(new SizeInt32(1180, 760));
+        _appWindow = Microsoft.UI.Windowing.AppWindow.GetFromWindowId(windowId);
+        _appWindow.Closing += OnAppWindowClosing;
+        _appWindow.Resize(new SizeInt32(1180, 760));
+    }
+
+    private void OnAppWindowClosing(Microsoft.UI.Windowing.AppWindow sender, Microsoft.UI.Windowing.AppWindowClosingEventArgs args)
+    {
+        if (_isExiting)
+        {
+            return;
+        }
+
+        args.Cancel = true;
+        ShowWindow(WindowNative.GetWindowHandle(this), SwHide);
     }
 
     private void ApplyMicaBackdrop()
@@ -601,6 +712,18 @@ public sealed partial class MainWindow : Window
 
     private static IntPtr OnWindowSubclass(IntPtr hwnd, uint message, UIntPtr wParam, IntPtr lParam, UIntPtr subclassId, UIntPtr refData)
     {
+        if (message == WmTrayIcon && lParam.ToInt32() == WmLeftButtonUp)
+        {
+            CurrentWindow?.ToggleLanguageFromTrayIcon();
+            return IntPtr.Zero;
+        }
+
+        if (message == WmTrayIcon && lParam.ToInt32() == WmLeftButtonDoubleClick)
+        {
+            CurrentWindow?.ShowSettingsWindowFromTrayIcon();
+            return IntPtr.Zero;
+        }
+
         if (message == WmGetMinMaxInfo)
         {
             MinMaxInfo minMaxInfo = Marshal.PtrToStructure<MinMaxInfo>(lParam);
@@ -656,4 +779,12 @@ public sealed partial class MainWindow : Window
 
     [DllImport("comctl32.dll")]
     private static extern IntPtr DefSubclassProc(IntPtr hwnd, uint message, UIntPtr wParam, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
 }

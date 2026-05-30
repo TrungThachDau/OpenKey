@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="OpenKeyNative.vcxproj" Id="8772428b-5d51-418c-9539-a57c1a2aec0c" />
+</Solution>
